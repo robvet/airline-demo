@@ -1,6 +1,5 @@
 from __future__ import annotations as _annotations
 
-import os
 from pydantic import BaseModel
 
 from agents import (
@@ -12,8 +11,7 @@ from agents import (
     input_guardrail,
 )
 
-# Use Azure OpenAI deployment from environment
-GUARDRAIL_MODEL = os.environ.get("AZURE_OPENAI_DEPLOYMENT", "gpt-4o")
+from azure_client import MODEL as GUARDRAIL_MODEL
 
 
 class RelevanceOutput(BaseModel):
