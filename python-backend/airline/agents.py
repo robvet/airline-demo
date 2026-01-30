@@ -2,11 +2,11 @@ from __future__ import annotations as _annotations
 
 import random
 import string
-import os
 
 from agents import Agent, RunContextWrapper, handoff
 from agents.extensions.handoff_prompt import RECOMMENDED_PROMPT_PREFIX
 
+from azure_client import MODEL
 from .context import AirlineAgentChatContext
 from .demo_data import apply_itinerary_defaults
 from .guardrails import jailbreak_guardrail, relevance_guardrail
@@ -23,8 +23,7 @@ from .tools import (
     update_seat,
 )
 
-# Azure OpenAI deployment name
-MODEL = os.environ.get("AZURE_OPENAI_DEPLOYMENT", "gpt-4o")
+# MODEL is imported from azure_client
 
 
 def seat_services_instructions(

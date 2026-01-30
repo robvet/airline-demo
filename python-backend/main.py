@@ -16,21 +16,10 @@ from fastapi import Depends, FastAPI, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response, StreamingResponse
 
-from azure.identity import DefaultAzureCredential, get_bearer_token_provider
-from openai import AzureOpenAI
 from agents import set_default_openai_client
+from azure_client import azure_client
 
-# Use Entra ID (Azure AD) authentication
-credential = DefaultAzureCredential()
-token_provider = get_bearer_token_provider(credential, "https://cognitiveservices.azure.com/.default")
-
-client = AzureOpenAI(
-    azure_ad_token_provider=token_provider,
-    api_version=os.environ["AZURE_OPENAI_API_VERSION"],
-    azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
-)
-
-set_default_openai_client(client)
+set_default_openai_client(azure_client)
 
 from airline.agents import (
     booking_cancellation_agent,
