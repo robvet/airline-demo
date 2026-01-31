@@ -1,0 +1,19 @@
+openai-agents
+openai-chatkit
+pydantic
+fastapi
+uvicorn
+azure-identity
+
+pydantic[dotenv]
+pydantic-settings
+
+debugpy  # Required for VS Code debugging
+
+# OpenTelemetry - pinned to compatible versions
+opentelemetry-api==1.39.0
+opentelemetry-sdk==1.39.0
+opentelemetry-instrumentation-fastapi==0.60b0
+opentelemetry-instrumentation-logging==0.60b0
+opentelemetry-instrumentation-httpx==0.60b0
+azure-monitor-opentelemetry-exporter==1.0.0b46
