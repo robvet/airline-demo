@@ -1,11 +1,13 @@
 "use client";
 
+import { useState, useMemo } from "react";
 import { Bot } from "lucide-react";
 import type { Agent, AgentEvent, GuardrailCheck } from "@/lib/types";
 import { AgentsList } from "./agents-list";
 import { Guardrails } from "./guardrails";
 import { ConversationContext } from "./conversation-context";
 import { RunnerOutput } from "./runner-output";
+import { SeatMap } from "./seat-map";
 
 interface AgentPanelProps {
   agents: Agent[];
@@ -22,10 +24,25 @@ export function AgentPanel({
   guardrails,
   context,
 }: AgentPanelProps) {
+  const [selectedSeat, setSelectedSeat] = useState<string | undefined>(undefined);
+  
   const activeAgent = agents.find((a) => a.name === currentAgent);
   const runnerEvents = events.filter(
     (e) => e.type !== "message" && e.type !== "progress_update"
   );
+
+  // Check if seat map should be shown based on tool output
+  const showSeatMap = useMemo(() => {
+    return events.some(
+      (e) => e.type === "tool_output" && e.content?.includes("DISPLAY_SEAT_MAP")
+    );
+  }, [events]);
+
+  const handleSeatSelect = (seatNumber: string) => {
+    setSelectedSeat(seatNumber);
+    // The seat selection could be used to send a message back to the agent
+    console.log(`Selected seat: ${seatNumber}`);
+  };
 
   return (
     <div className="w-3/5 h-full flex flex-col border-r border-gray-200 bg-white rounded-xl shadow-sm">
@@ -47,6 +64,11 @@ export function AgentPanel({
           inputGuardrails={activeAgent?.input_guardrails ?? []}
         />
         <RunnerOutput runnerEvents={runnerEvents} />
+        {showSeatMap && (
+          <div className="mt-4">
+            <SeatMap onSeatSelect={handleSeatSelect} selectedSeat={selectedSeat} />
+          </div>
+        )}
       </div>
     </div>
   );
