@@ -26,7 +26,7 @@ export OPENAI_API_KEY=your_api_key
 
 You can also follow [these instructions](https://platform.openai.com/docs/libraries#create-and-export-an-api-key) to set your OpenAI key at a global level.
 
-Alternatively, you can set the `OPENAI_API_KEY` environment variable in an `.env` file at the root of the `python-backend` folder. You will need to install the `python-dotenv` package to load the environment variables from the `.env` file. And then, add these lines of code to your app:
+Alternatively, you can set the `OPENAI_API_KEY` environment variable in an `.env` file at the root of the project. You will need to install the `python-dotenv` package to load the environment variables from the `.env` file. And then, add these lines of code to your app:
 
 ```bash
 from dotenv import load_dotenv
@@ -39,16 +39,20 @@ load_dotenv()
 Install the dependencies for the backend by running the following commands:
 
 ```bash
-cd python-backend
+cd src/app
 python -m venv .venv
 source .venv/bin/activate
+```
+
+```
+# packages
 pip install -r requirements.txt
 ```
 
 For the UI, you can run:
 
 ```bash
-cd ui
+cd src/ui
 npm install
 ```
 
@@ -58,7 +62,7 @@ You can either run the backend independently if you want to use a separate UI, o
 
 #### Run the backend independently
 
-From the `python-backend` folder, run:
+From the `src/app` folder, run:
 
 ```bash
 python -m uvicorn main:app --reload --port 8000
@@ -68,7 +72,7 @@ The backend will be available at: [http://localhost:8000](http://localhost:8000)
 
 #### Run the UI & backend simultaneously
 
-From the `ui` folder, run:
+From the `src/ui` folder, run:
 
 ```bash
 npm run dev
