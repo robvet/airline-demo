@@ -42,15 +42,12 @@ from chatkit.types import (
 from chatkit.store import NotFoundError
 
 from .airline.context import AirlineAgentChatContext, AirlineAgentContext, create_initial_context, public_context
-from .airline.agents import (
-    booking_cancellation_agent,
-    faq_agent,
-    flight_information_agent,
-    refunds_compensation_agent,
-    seat_special_services_agent,
-    triage_agent,
-)
+from .airline.agents import triage_agent
+from .airline.orchestrator import Orchestrator
 from .memory_store import MemoryStore
+
+
+
 
 
 class AgentEvent(BaseModel):
@@ -71,17 +68,7 @@ class GuardrailCheck(BaseModel):
     timestamp: float
 
 
-def _get_agent_by_name(name: str):
-    """Return the agent object by name."""
-    agents = {
-        triage_agent.name: triage_agent,
-        faq_agent.name: faq_agent,
-        seat_special_services_agent.name: seat_special_services_agent,
-        flight_information_agent.name: flight_information_agent,
-        booking_cancellation_agent.name: booking_cancellation_agent,
-        refunds_compensation_agent.name: refunds_compensation_agent,
-    }
-    return agents.get(name, triage_agent)
+# Agent lookup moved to airline/orchestrator.py - use get_agent_by_name()
 
 
 def _get_guardrail_name(g) -> str:
@@ -98,26 +85,20 @@ def _get_guardrail_name(g) -> str:
     return str(g)
 
 
-def _build_agents_list() -> List[Dict[str, Any]]:
-    """Build a list of all available agents and their metadata."""
+class AirlineServer(ChatKitServer):
+    """Main server handling airline agent orchestration."""
 
-    def make_agent_dict(agent):
-        return {
-            "name": agent.name,
-            "description": getattr(agent, "handoff_description", ""),
-            "handoffs": [getattr(h, "agent_name", getattr(h, "name", "")) for h in getattr(agent, "handoffs", [])],
-            "tools": [getattr(t, "name", getattr(t, "__name__", "")) for t in getattr(agent, "tools", [])],
-            "input_guardrails": [_get_guardrail_name(g) for g in getattr(agent, "input_guardrails", [])],
-        }
-
-    return [
-        make_agent_dict(triage_agent),
-        make_agent_dict(faq_agent),
-        make_agent_dict(seat_special_services_agent),
-        make_agent_dict(flight_information_agent),
-        make_agent_dict(booking_cancellation_agent),
-        make_agent_dict(refunds_compensation_agent),
-    ]
+    def _build_agents_list(self) -> List[Dict[str, Any]]:
+        """Build a list of all available agents and their metadata."""
+        def make_agent_dict(agent):
+            return {
+                "name": agent.name,
+                "description": getattr(agent, "handoff_description", ""),
+                "handoffs": [getattr(h, "agent_name", getattr(h, "name", "")) for h in getattr(agent, "handoffs", [])],
+                "tools": [getattr(t, "name", getattr(t, "__name__", "")) for t in getattr(agent, "tools", [])],
+                "input_guardrails": [_get_guardrail_name(g) for g in getattr(agent, "input_guardrails", [])],
+            }
+        return [make_agent_dict(agent) for agent in self._orchestrator.agents.values()]
 
 
 def _user_message_to_text(message: UserMessageItem) -> str:
@@ -149,7 +130,6 @@ class ConversationState:
     guardrails: List[GuardrailCheck] = field(default_factory=list)
 
 
-class AirlineServer(ChatKitServer[dict[str, Any]]):
     def __init__(self) -> None:
         self.store = MemoryStore()
         super().__init__(self.store)
@@ -157,6 +137,7 @@ class AirlineServer(ChatKitServer[dict[str, Any]]):
         self._listeners: Dict[str, list[asyncio.Queue]] = {}
         self._last_event_index: Dict[str, int] = {}
         self._last_snapshot: Dict[str, str] = {}
+        self._orchestrator = Orchestrator()
 
     def _state_for_thread(self, thread_id: str) -> ConversationState:
         if thread_id not in self._state:
@@ -188,7 +169,7 @@ class AirlineServer(ChatKitServer[dict[str, Any]]):
     ) -> List[GuardrailCheck]:
         checks: List[GuardrailCheck] = []
         timestamp = time.time() * 1000
-        agent = _get_agent_by_name(agent_name)
+        agent = self._orchestrator.get_agent(agent_name)
         for guardrail in getattr(agent, "input_guardrails", []):
             result = next((r for r in guardrail_results if r.guardrail == guardrail), None)
             reasoning = ""
@@ -232,7 +213,7 @@ class AirlineServer(ChatKitServer[dict[str, Any]]):
         run_items: List[Any],
         current_agent_name: str,
         thread_id: str,
-    ) -> (List[AgentEvent], str):
+    ) -> tuple[List[AgentEvent], str]:
         events: List[AgentEvent] = []
         active_agent = current_agent_name
         for item in run_items:
@@ -340,11 +321,14 @@ class AirlineServer(ChatKitServer[dict[str, Any]]):
         yield ClientEffectEvent(name="runner_bind_thread", data={"thread_id": thread.id, "ts": time.time()})
 
         try:
+            # === ORCHESTRATION CALL ===
+            # For debugging, set breakpoint in airline/orchestrator.py at Orchestrator.run()
             result = Runner.run_streamed(
-                _get_agent_by_name(state.current_agent_name),
+                self._orchestrator.get_agent(state.current_agent_name),
                 state.input_items,
                 context=chat_context,
             )
+            # === PLUMBING: Event recording and broadcasting (developers can ignore) ===
             async for event in stream_agent_response(chat_context, result):
                 if isinstance(event, ProgressUpdateEvent) or getattr(event, "type", "") == "progress_update_event":
                     # Ignore progress updates for the Runner panel; ChatKit will handle them separately.
@@ -404,7 +388,7 @@ class AirlineServer(ChatKitServer[dict[str, Any]]):
             reasoning = getattr(gr_output, "reasoning", "")
             timestamp = time.time() * 1000
             checks: List[GuardrailCheck] = []
-            for guardrail in _get_agent_by_name(state.current_agent_name).input_guardrails:
+            for guardrail in self._orchestrator.get_agent(state.current_agent_name).input_guardrails:
                 checks.append(
                     GuardrailCheck(
                         id=uuid4().hex,
@@ -489,7 +473,7 @@ class AirlineServer(ChatKitServer[dict[str, Any]]):
             "thread_id": thread.id,
             "current_agent": state.current_agent_name,
             "context": public_context(state.context),
-            "agents": _build_agents_list(),
+            "agents": self._build_agents_list(),
             "events": [e.model_dump() for e in state.events],
             "guardrails": [g.model_dump() for g in state.guardrails],
         }

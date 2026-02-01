@@ -16,7 +16,9 @@ if (-not $env:VIRTUAL_ENV) {
 
 Write-Host "Starting backend server..." -ForegroundColor Cyan
 Set-Location $scriptDir
-python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+# Port cleanup is handled by app.run (crash-safe Python wrapper)
+python -m app.run
 
 
 

@@ -131,5 +131,5 @@ dmypy.json
 node_modules/
 
 # ui stuff
-
-ui/.next/
+.next/
+src/ui/.next/
