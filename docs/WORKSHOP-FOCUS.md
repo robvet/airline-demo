@@ -2,6 +2,43 @@
 
 This document identifies the **teaching folders** for the OpenAI Airlines workshop on deterministic AI engineering.
 
+The following table presents critical touchpoints that demonstrate deterministic touchpoints. 
+
+## Deterministic Validation Breakpoints
+
+| # | File | Location | What It Shows |
+|---|------|----------|---------------|
+| **1** | `intent_classifier.py` | `classify()` ~L48 | LLM call to build ClassificationResponse |
+| **2** | `intent_classifier.py` | `classify()` ~L55 | Validate ClassificationResponse before returning to orchestrator |
+| **3** | `orchestrator.py` | `handle()` ~L92 | Receive + validate ClassificationResponse from intent classifier |
+| **4** | `orchestrator.py` | `_execute_tool()` ~L162 | Build FAQRequest structured object |
+| **5** | `orchestrator.py` | `_execute_tool()` ~L172 | Validate FAQRequest before sending to tool |
+| **6** | `faq_tool.py` | `execute()` ~L48 | Receive + validate FAQRequest at tool entry |
+| **7** | `faq_tool.py` | `execute()` ~L60 | Build context window (load grounding data) |
+| **8** | `faq_tool.py` | `execute()` ~L70 | Populate prompt template with variables |
+| **9** | `llm_service.py` | `complete()` ~L78 | LLM API call (inspect prompt, model selection) |
+| **10a** | `llm_service.py` | `complete()` ~L90 | Raw LLM response (JSON string from model) |
+| **10b** | `llm_service.py` | `complete()` ~L97 | JSON parsing (string → dict) |
+| **10c** | `llm_service.py` | `complete()` ~L107 | Pydantic validation (dict → validated model) |
+| **11** | `faq_tool.py` | `execute()` ~L95 | Validate FAQResponse before returning to orchestrator |
+| **12** | `orchestrator.py` | `_execute_tool()` ~L182 | Receive + validate FAQResponse from tool |
+| **13** | `orchestrator.py` | `_execute_tool()` ~L195 | Build AgentResponse, return to user |
+
+### Key Pattern: Validate at Every Boundary
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ## TL;DR - Where to Focus
 
 | Folder | Purpose | Workshop Relevance |

@@ -2,16 +2,14 @@
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 # Activate venv
-$venvPath = Join-Path $scriptDir ".venv/Scripts/Activate.ps1"
+$venvPath = Join-Path $scriptDir "../.venv/Scripts/Activate.ps1"
 if (Test-Path $venvPath) { & $venvPath }
 
 # Start frontend in new window
-Write-Host "Starting frontend..." -ForegroundColor Cyan
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$scriptDir\src\ui'; npm run dev:next"
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$scriptDir\ui'; npm run dev:next"
 
-# Start backend with debugger (listening, not waiting)
-Write-Host "Starting backend in DEBUG mode (debugger listening on port 5678)..." -ForegroundColor Yellow
-Set-Location (Join-Path $scriptDir "src")
+# Start backend with debugger
+Set-Location $scriptDir
 
 # Open browser after delay
 Start-Job -ScriptBlock {

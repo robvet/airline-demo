@@ -4,6 +4,8 @@ pydantic
 fastapi
 uvicorn
 azure-identity
+litellm
+python-dotenv
 
 pydantic[dotenv]
 pydantic-settings
