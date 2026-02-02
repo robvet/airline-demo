@@ -6,6 +6,7 @@ uvicorn
 azure-identity
 litellm
 python-dotenv
+streamlit
 
 pydantic[dotenv]
 pydantic-settings

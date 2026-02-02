@@ -1,7 +1,7 @@
 """
-Streamlit UI for OpenAI Airlines Demo.
+Streamlit UI for Pacific Airlines Demo.
 
-Single-agent architecture with AirlineAgent.
+Wired to use OrchestratorAgent with our deterministic patterns.
 Run with: streamlit run streamlit_app.py
 """
 import sys
@@ -11,35 +11,68 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import streamlit as st
-from app.airline.agent import AirlineAgent
+from agents.orchestrator import OrchestratorAgent
+from config.llm_config import LLMConfig
+from memory import InMemoryStore
+from models.context import AgentContext
+from services.llm_service import LLMService
+from services.prompt_template_service import PromptTemplateService
+from tools.faq_tool import FAQTool
+from tools.tool_registry import ToolRegistry
 
-st.set_page_config(page_title="OpenAI Airlines", layout="wide")
+st.set_page_config(page_title="Pacific Airlines", layout="wide")
+
+
+def create_orchestrator():
+    """Create and wire up the orchestrator with all dependencies."""
+    config = LLMConfig()
+    config.validate()
+    
+    llm_service = LLMService(config)
+    template_service = PromptTemplateService()
+    memory_store = InMemoryStore()
+    
+    registry = ToolRegistry()
+    registry.register(
+        name="faq",
+        description="Answers general questions about baggage, policies, fees, and airline procedures",
+        tool_class=FAQTool
+    )
+    
+    orchestrator = OrchestratorAgent(
+        registry=registry,
+        llm_service=llm_service,
+        template_service=template_service,
+        memory_store=memory_store
+    )
+    
+    return orchestrator, memory_store, registry
+
 
 # Initialize session state
 if "messages" not in st.session_state:
     st.session_state.messages = []
-if "events" not in st.session_state:
-    st.session_state.events = []
-if "agent" not in st.session_state:
-    st.session_state.agent = AirlineAgent()
+if "orchestrator" not in st.session_state:
+    orch, mem, reg = create_orchestrator()
+    st.session_state.orchestrator = orch
+    st.session_state.memory_store = mem
+    st.session_state.registry = reg
+if "context" not in st.session_state:
+    st.session_state.context = AgentContext(customer_name="Workshop Attendee")
+if "last_response" not in st.session_state:
+    st.session_state.last_response = None
 
 
-def run_agent(user_input: str) -> str:
-    """Run the agent with user input."""
-    agent: AirlineAgent = st.session_state.agent
+def run_agent(user_input: str):
+    """Run the orchestrator with user input."""
+    orchestrator = st.session_state.orchestrator
+    context = st.session_state.context
     
-    # Run agent - simple!
-    result = agent.run(user_input)
+    context.turn_count += 1
+    response = orchestrator.handle(user_input, context)
+    st.session_state.last_response = response
     
-    # Record events for debugging
-    for item in result.new_items:
-        item_type = type(item).__name__
-        st.session_state.events.append({
-            "type": item_type,
-            "content": str(item)[:100]
-        })
-    
-    return result.response
+    return response
 
 
 # Layout
@@ -49,40 +82,56 @@ left, right = st.columns([3, 2])
 with left:
     st.markdown("### 🤖 Agent View")
     
-    agent: AirlineAgent = st.session_state.agent
-    
-    # Current agent
-    st.markdown(f"**Active Agent:** `{agent.agent_name}`")
-    
-    # Tools list
-    with st.expander("🔧 Available Tools", expanded=False):
-        for tool in AirlineAgent.TOOLS:
-            name = getattr(tool, "name", str(tool))
-            st.text(f"  • {name}")
-    
-    # Context - live from agent
+    # Current context
     with st.expander("📌 Customer Context", expanded=True):
-        ctx = agent.context
+        ctx = st.session_state.context
         st.json({
-            "confirmation_number": ctx.confirmation_number,
-            "flight_number": ctx.flight_number,
-            "seat_number": ctx.seat_number,
-            "passenger_name": ctx.passenger_name,
+            "customer_name": ctx.customer_name,
+            "turn_count": ctx.turn_count,
         })
     
-    # Events
-    with st.expander("⚡ Runner Events", expanded=True):
-        if st.session_state.events:
-            for e in st.session_state.events[-10:]:  # Last 10
-                st.text(f"{e['type']}: {e['content'][:60]}")
+    # Registered tools
+    with st.expander("🔧 Registered Tools", expanded=True):
+        registry = st.session_state.registry
+        st.text(registry.get_routing_descriptions())
+    
+    # Last response details
+    with st.expander("📊 Last Response Details", expanded=True):
+        resp = st.session_state.last_response
+        if resp:
+            st.json({
+                "routed_to": resp.routed_to,
+                "confidence": resp.confidence,
+                "original_input": resp.original_input,
+                "rewritten_input": resp.rewritten_input,
+            })
         else:
-            st.text("No events yet")
+            st.text("No response yet")
+    
+    # Memory (conversation history)
+    with st.expander("🧠 Conversation Memory", expanded=False):
+        memory = st.session_state.memory_store
+        session_id = st.session_state.context.customer_name
+        history = memory.get_history(session_id)
+        if history:
+            for i, turn in enumerate(history):
+                st.markdown(f"**Turn {i+1}:** {turn.intent} (conf: {turn.confidence:.2f})")
+                st.text(f"  User: {turn.user_input[:50]}...")
+                st.text(f"  Agent: {turn.agent_response[:50]}...")
+                if turn.tool_reasoning:
+                    st.text(f"  Reasoning: {turn.tool_reasoning[:50]}...")
+        else:
+            st.text("No history yet")
     
     # Reset button
     if st.button("🔄 Reset Conversation"):
         st.session_state.messages = []
-        st.session_state.events = []
-        st.session_state.agent = AirlineAgent()
+        st.session_state.last_response = None
+        orch, mem, reg = create_orchestrator()
+        st.session_state.orchestrator = orch
+        st.session_state.memory_store = mem
+        st.session_state.registry = reg
+        st.session_state.context = AgentContext(customer_name="Workshop Attendee")
         st.rerun()
 
 # Right panel - Chat
@@ -97,7 +146,7 @@ with right:
                 st.write(msg["content"])
     
     # Chat input
-    if prompt := st.chat_input("Ask about flights, seats, baggage..."):
+    if prompt := st.chat_input("Ask about baggage, policies, fees..."):
         # Add user message
         st.session_state.messages.append({"role": "user", "content": prompt})
         
@@ -105,7 +154,7 @@ with right:
         with st.spinner("Thinking..."):
             try:
                 response = run_agent(prompt)
-                st.session_state.messages.append({"role": "assistant", "content": response})
+                st.session_state.messages.append({"role": "assistant", "content": response.answer})
             except Exception as e:
                 st.error(f"Error: {e}")
                 st.session_state.messages.append({"role": "assistant", "content": f"Error: {e}"})
