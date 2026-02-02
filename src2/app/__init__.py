@@ -1,5 +1,5 @@
 """
-Pacific Airlines Agent - Main Application Package.
+Deterministic Airlines Agent - Main Application Package.
 
 This package contains all application logic:
 - agents/     - Orchestration and routing

@@ -112,8 +112,16 @@ class ClassificationResponse(BaseModel):
     #
     # UPDATE THIS LIST when you add new tools to the registry!
     # ==========================================================================
-    intent: Literal["faq", "booking", "refund", "seat_services", "flight_info"] = Field(
-        description="The tool name to route to. Must be one of: faq, booking, refund, seat_services, flight_info"
+    intent: Literal[
+        "faq", 
+        "book_flight", 
+        "cancel_flight",
+        "flight_status",
+        "baggage",
+        "seat",
+        "compensation"
+    ] = Field(
+        description="The tool name to route to. Must be one of: faq, book_flight, cancel_flight, flight_status, baggage, seat, compensation"
     )
     
     # ==========================================================================

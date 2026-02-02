@@ -1,5 +1,5 @@
 """
-API Routes for Pacific Airlines Agent.
+API Routes for Deterministic Airlines Agent.
 
 Simple REST endpoints that call the OrchestratorAgent.
 Similar to a Controller in ASP.NET or Spring.
@@ -16,6 +16,12 @@ from ..models.context import AgentContext
 from ..services.llm_service import LLMService
 from ..services.prompt_template_service import PromptTemplateService
 from ..tools.faq_tool import FAQTool
+from ..tools.book_flight_tool import BookFlightTool
+from ..tools.cancel_flight_tool import CancelFlightTool
+from ..tools.flight_status_tool import FlightStatusTool
+from ..tools.baggage_tool import BaggageTool
+from ..tools.seat_tool import SeatTool
+from ..tools.compensation_tool import CompensationTool
 from ..tools.tool_registry import ToolRegistry
 
 
@@ -59,6 +65,36 @@ def get_orchestrator() -> OrchestratorAgent:
             name="faq",
             description="Answers general questions about baggage, policies, fees, and airline procedures",
             tool_class=FAQTool
+        )
+        registry.register(
+            name="book_flight",
+            description="Books a new flight reservation for the customer",
+            tool_class=BookFlightTool
+        )
+        registry.register(
+            name="cancel_flight",
+            description="Cancels an existing flight booking and processes refunds",
+            tool_class=CancelFlightTool
+        )
+        registry.register(
+            name="flight_status",
+            description="Checks the status of a flight including delays, cancellations, and gate information",
+            tool_class=FlightStatusTool
+        )
+        registry.register(
+            name="baggage",
+            description="Handles baggage inquiries including allowance, fees, and lost bag claims",
+            tool_class=BaggageTool
+        )
+        registry.register(
+            name="seat",
+            description="Handles seat selection, changes, and special service seating requests",
+            tool_class=SeatTool
+        )
+        registry.register(
+            name="compensation",
+            description="Processes compensation requests for delays, cancellations, and missed connections",
+            tool_class=CompensationTool
         )
         
         _orchestrator = OrchestratorAgent(

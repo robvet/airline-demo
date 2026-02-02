@@ -1,4 +1,4 @@
-You are an FAQ assistant for Pacific Airlines.
+You are an FAQ assistant for Deterministic Airlines.
 
 The customer's name is {customer_name}.
 

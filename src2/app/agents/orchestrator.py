@@ -18,6 +18,11 @@ from ..models.agent_models import AgentResponse
 from ..models.classification import ClassificationResponse
 from ..models.context import AgentContext
 from ..models.faq import FAQRequest, FAQResponse
+from ..models.booking import BookFlightRequest, BookFlightResponse, CancelFlightRequest, CancelFlightResponse
+from ..models.flight_status import FlightStatusRequest, FlightStatusResponse
+from ..models.baggage import BaggageRequest, BaggageResponse
+from ..models.seat import SeatRequest, SeatResponse
+from ..models.compensation import CompensationRequest, CompensationResponse
 from ..memory import IMemoryStore, ConversationTurn
 from ..services.intent_classifier import IntentClassifier
 from ..services.llm_service import LLMService
@@ -110,6 +115,8 @@ class OrchestratorAgent:
         assert 0.0 <= classification.confidence <= 1.0, \
             f"Confidence must be 0.0-1.0, got {classification.confidence}"
         print(f"[Orchestrator] ✓ Received valid ClassificationResponse")
+        print(f"[Orchestrator]   Intent: '{classification.intent}'")
+        print(f"[Orchestrator]   Available tools: {self._registry.list_tools()}")
         
         # =================================================================
         # STEP 2: CONFIDENCE-BASED ROUTING DECISION
@@ -189,27 +196,11 @@ class OrchestratorAgent:
         # =================================================================
         # BREAKPOINT 4: BUILD STRUCTURED REQUEST FOR TOOL
         # -----------------------------------------------------------------
-        # Create FAQRequest using the REWRITTEN prompt (cleaner, focused).
-        # Pydantic validates on construction - if 'question' is empty
-        # or wrong type, this will raise ValidationError.
-        #
-        # NOTE: In production, each tool would have its own request type.
-        # We'd use a factory pattern to build the right request type
-        # based on classification.intent.
+        # Create the appropriate request type based on the classified intent.
+        # Each tool has its own request model - we route to the right one.
         # =================================================================
-        request = FAQRequest(question=classification.rewritten_prompt)
-        
-        # =================================================================
-        # BREAKPOINT 5: VALIDATE STRUCTURED REQUEST BEFORE SENDING
-        # -----------------------------------------------------------------
-        # DETERMINISTIC PATTERN: Explicit validation at boundaries.
-        # Verify the request object is properly formed before passing
-        # to the tool. This catches issues early.
-        # =================================================================
-        assert isinstance(request, FAQRequest), \
-            f"Expected FAQRequest, got {type(request)}"
-        assert request.question, "FAQRequest.question cannot be empty"
-        print(f"[Orchestrator] ✓ Built valid FAQRequest: '{request.question[:50]}...'")
+        request = self._build_request(classification)
+        print(f"[Orchestrator] ✓ Built {type(request).__name__}: '{classification.rewritten_prompt[:50]}...'")
         
         # Execute the tool (this is where the main LLM work happens)
         tool_response = tool.execute(request, context)
@@ -218,13 +209,10 @@ class OrchestratorAgent:
         # BREAKPOINT 12: RECEIVE + VALIDATE RESPONSE FROM TOOL
         # -----------------------------------------------------------------
         # DETERMINISTIC PATTERN: Validate all responses from external calls.
-        # The tool should have returned a valid FAQResponse.
-        # Verify structure before using the data.
+        # Check we got a valid response with an answer/message.
         # =================================================================
-        assert isinstance(tool_response, FAQResponse), \
-            f"Expected FAQResponse, got {type(tool_response)}"
-        assert tool_response.answer, "FAQResponse.answer cannot be empty"
-        print(f"[Orchestrator] ✓ Received valid FAQResponse")
+        answer = self._extract_answer(tool_response)
+        print(f"[Orchestrator] ✓ Received valid response from {classification.intent}")
         
         # =================================================================
         # BREAKPOINT 13: ORCHESTRATOR REASONS + BUILDS FINAL RESPONSE
@@ -237,7 +225,7 @@ class OrchestratorAgent:
         # - Add follow-up suggestions
         # =================================================================
         final_response = AgentResponse(
-            answer=tool_response.answer,
+            answer=answer,
             routed_to=classification.intent,
             confidence=classification.confidence,
             original_input=original_input,
@@ -246,9 +234,10 @@ class OrchestratorAgent:
         print(f"[Orchestrator] ✓ Built AgentResponse, returning to user")
         
         # Save with tool reasoning for visibility
+        tool_reasoning = getattr(tool_response, 'reasoning', None)
         self._save_turn(
             context, original_input, final_response, classification,
-            tool_reasoning=tool_response.reasoning
+            tool_reasoning=tool_reasoning
         )
         return final_response
     
@@ -335,3 +324,90 @@ class OrchestratorAgent:
         # Use customer_name as session_id (in production, use a real session ID)
         session_id = context.customer_name
         self._memory.save_turn(session_id, turn)
+    
+    def _build_request(self, classification: ClassificationResponse):
+        """
+        Build the appropriate request object based on classified intent.
+        
+        This factory method routes to the right request type:
+        - faq → FAQRequest
+        - book_flight → BookFlightRequest  
+        - cancel_flight → CancelFlightRequest
+        - flight_status → FlightStatusRequest
+        - baggage → BaggageRequest
+        - seat → SeatRequest
+        - compensation → CompensationRequest
+        """
+        intent = classification.intent
+        entities = {e.type: e.value for e in classification.entities}
+        
+        if intent == "faq":
+            return FAQRequest(question=classification.rewritten_prompt)
+        
+        elif intent == "book_flight":
+            return BookFlightRequest(
+                flight_number=entities.get("flight_number"),
+                origin=entities.get("origin"),
+                destination=entities.get("destination"),
+                date=entities.get("date"),
+                passenger_name=entities.get("passenger_name")
+            )
+        
+        elif intent == "cancel_flight":
+            return CancelFlightRequest(
+                confirmation_number=entities.get("confirmation_number"),
+                flight_number=entities.get("flight_number"),
+                reason=entities.get("reason")
+            )
+        
+        elif intent == "flight_status":
+            return FlightStatusRequest(
+                flight_number=entities.get("flight_number"),
+                confirmation_number=entities.get("confirmation_number")
+            )
+        
+        elif intent == "baggage":
+            return BaggageRequest(
+                question=classification.rewritten_prompt,
+                confirmation_number=entities.get("confirmation_number"),
+                baggage_tag=entities.get("baggage_tag")
+            )
+        
+        elif intent == "seat":
+            return SeatRequest(
+                question=classification.rewritten_prompt,
+                confirmation_number=entities.get("confirmation_number"),
+                flight_number=entities.get("flight_number"),
+                requested_seat=entities.get("seat_number"),
+                preference=entities.get("preference"),
+                special_needs=entities.get("special_needs")
+            )
+        
+        elif intent == "compensation":
+            return CompensationRequest(
+                question=classification.rewritten_prompt,
+                confirmation_number=entities.get("confirmation_number"),
+                flight_number=entities.get("flight_number"),
+                reason=entities.get("reason")
+            )
+        
+        else:
+            # Default to FAQ for unknown intents
+            print(f"[Orchestrator] Unknown intent '{intent}', defaulting to FAQ")
+            return FAQRequest(question=classification.rewritten_prompt)
+    
+    def _extract_answer(self, tool_response) -> str:
+        """
+        Extract the answer/message from a tool response.
+        
+        Different tools return different response types:
+        - FAQResponse has .answer
+        - BookFlightResponse has .message
+        - CancelFlightResponse has .message
+        """
+        if hasattr(tool_response, 'answer'):
+            return tool_response.answer
+        elif hasattr(tool_response, 'message'):
+            return tool_response.message
+        else:
+            return str(tool_response)

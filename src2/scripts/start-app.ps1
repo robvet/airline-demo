@@ -10,8 +10,14 @@ if (-not (Test-Path $venvPath)) {
     exit 1
 }
 
-Write-Host "Starting Pacific Airlines Demo..." -ForegroundColor Cyan
+Write-Host "Starting Deterministic Airlines Demo..." -ForegroundColor Cyan
 Write-Host ""
+
+# Kill any existing processes on ports 8000 and 8501
+Write-Host "Stopping any existing servers..." -ForegroundColor Yellow
+Get-NetTCPConnection -LocalPort 8000 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }
+Get-NetTCPConnection -LocalPort 8501 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }
+Start-Sleep -Seconds 1
 
 # Start backend in a new terminal window
 Write-Host "Starting FastAPI backend on http://localhost:8000 ..." -ForegroundColor Green
