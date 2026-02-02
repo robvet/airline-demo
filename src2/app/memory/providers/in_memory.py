@@ -20,7 +20,7 @@ Perfect for:
 For production, swap to RedisStore or CosmosStore.
 =============================================================================
 """
-from memory.models import ConversationTurn
+from ..models import ConversationTurn
 
 
 class InMemoryStore:

@@ -21,7 +21,7 @@ from typing import Type
 from litellm import completion
 from pydantic import BaseModel
 
-from config.llm_config import LLMConfig
+from ..config.llm_config import LLMConfig
 
 
 class LLMService:

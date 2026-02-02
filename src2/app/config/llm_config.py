@@ -23,7 +23,8 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 # Load .env from project root (parent of src2/)
-PROJECT_ROOT = Path(__file__).parent.parent.parent
+# __file__ = src2/app/config/llm_config.py, so go up 4 levels
+PROJECT_ROOT = Path(__file__).parent.parent.parent.parent
 ENV_FILE = PROJECT_ROOT / ".env"
 
 if ENV_FILE.exists():
