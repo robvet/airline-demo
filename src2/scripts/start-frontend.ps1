@@ -1,6 +1,7 @@
-# Start the Python backend server
+# Start the Streamlit frontend
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$venvPath = Join-Path $scriptDir "../.venv/Scripts/Activate.ps1"
+$src2Dir = Split-Path -Parent $scriptDir
+$venvPath = Join-Path $src2Dir "../.venv/Scripts/Activate.ps1"
 
 # Check if virtual environment is activated, if not activate it
 if (-not $env:VIRTUAL_ENV) {
@@ -14,12 +15,13 @@ if (-not $env:VIRTUAL_ENV) {
     }
 }
 
-Write-Host "Starting backend server..." -ForegroundColor Cyan
-Set-Location $scriptDir
+Write-Host "Starting Streamlit frontend..." -ForegroundColor Cyan
+Set-Location (Join-Path $src2Dir "ui")
 
-# Run the main orchestrator (REPL mode for debugging)
-python main.py
+# Open browser after delay (give Streamlit time to start)
+Start-Job -ScriptBlock {
+    Start-Sleep -Seconds 3
+    Start-Process "http://localhost:8501"
+} | Out-Null
 
-
-
-
+python -m streamlit run streamlit_app.py

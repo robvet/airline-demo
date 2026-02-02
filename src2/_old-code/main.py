@@ -16,14 +16,14 @@ WORKSHOP OBJECTIVES DEMONSTRATED:
 4. Context Management - See AgentContext passed through the pipeline
 5. Structured I/O - See Pydantic models at every step
 """
-from app.agents.orchestrator import OrchestratorAgent
-from app.config.llm_config import LLMConfig
-from app.memory import InMemoryStore
-from app.models.context import AgentContext
-from app.services.llm_service import LLMService
-from app.services.prompt_template_service import PromptTemplateService
-from app.tools.faq_tool import FAQTool
-from app.tools.tool_registry import ToolRegistry
+from .app.agents.orchestrator import OrchestratorAgent
+from .app.config.llm_config import LLMConfig
+from .app.memory import InMemoryStore
+from .app.models.context import AgentContext
+from .app.services.llm_service import LLMService
+from .app.services.prompt_template_service import PromptTemplateService
+from .app.tools.faq_tool import FAQTool
+from .app.tools.tool_registry import ToolRegistry
 
 
 def main():

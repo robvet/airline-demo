@@ -9,9 +9,9 @@ This service uses a smaller/faster model to:
 All three tasks in one LLM call for efficiency.
 """
 
-from models.classification import ClassificationResponse
-from services.llm_service import LLMService
-from services.prompt_template_service import PromptTemplateService
+from ..models.classification import ClassificationResponse
+from .llm_service import LLMService
+from .prompt_template_service import PromptTemplateService
 
 
 class IntentClassifier:

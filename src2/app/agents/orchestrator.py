@@ -14,15 +14,15 @@ WORKSHOP OBJECTIVES DEMONSTRATED:
 - Fallback handling for low confidence
 """
 
-from models.agent_models import AgentResponse
-from models.classification import ClassificationResponse
-from models.context import AgentContext
-from models.faq import FAQRequest, FAQResponse
-from memory import IMemoryStore, ConversationTurn
-from services.intent_classifier import IntentClassifier
-from services.llm_service import LLMService
-from services.prompt_template_service import PromptTemplateService
-from tools.tool_registry import ToolRegistry
+from ..models.agent_models import AgentResponse
+from ..models.classification import ClassificationResponse
+from ..models.context import AgentContext
+from ..models.faq import FAQRequest, FAQResponse
+from ..memory import IMemoryStore, ConversationTurn
+from ..services.intent_classifier import IntentClassifier
+from ..services.llm_service import LLMService
+from ..services.prompt_template_service import PromptTemplateService
+from ..tools.tool_registry import ToolRegistry
 
 
 # Confidence thresholds

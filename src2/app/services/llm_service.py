@@ -17,7 +17,7 @@ from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from openai import AzureOpenAI
 from pydantic import BaseModel
 
-from config.llm_config import LLMConfig
+from ..config.llm_config import LLMConfig
 
 
 class LLMService:

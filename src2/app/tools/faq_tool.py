@@ -9,10 +9,10 @@ This tool demonstrates:
 
 SET BREAKPOINT in execute() to trace the full flow.
 """
-from models.context import AgentContext
-from models.faq import FAQRequest, FAQResponse
-from services.llm_service import LLMService
-from services.prompt_template_service import PromptTemplateService
+from ..models.context import AgentContext
+from ..models.faq import FAQRequest, FAQResponse
+from ..services.llm_service import LLMService
+from ..services.prompt_template_service import PromptTemplateService
 from data.faq_data import get_formatted_faq_data
 
 
