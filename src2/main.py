@@ -12,7 +12,7 @@ TO DEBUG:
 WORKSHOP OBJECTIVES DEMONSTRATED:
 1. Tool Discovery - See ToolRegistry.register() and get()
 2. Intent Classification - See IntentClassifier with NER and prompt rewriting
-3. Prompt Engineering - See prompts/classification.txt and prompts/faq.txt
+3. Prompt Engineering - See prompts/intent_prompt.txt and prompts/faq_prompt.txt
 4. Context Management - See AgentContext passed through the pipeline
 5. Structured I/O - See Pydantic models at every step
 """

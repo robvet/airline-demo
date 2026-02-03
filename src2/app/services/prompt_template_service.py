@@ -16,8 +16,8 @@ Template syntax:
   - Example: "Hello {customer_name}, how can I help with {topic}?"
 
 Available templates (in prompts/ folder):
-  - classification.txt: Intent classification with NER and prompt rewriting
-  - faq.txt: FAQ tool system prompt with grounding data
+  - intent_prompt.txt: Intent classification with NER and prompt rewriting
+  - faq_prompt.txt: FAQ tool system prompt with grounding data
 """
 from pathlib import Path
 
@@ -28,7 +28,7 @@ class PromptTemplateService:
     
     Usage:
         template_service = PromptTemplateService()
-        prompt = template_service.load("faq", {
+        prompt = template_service.load("faq_prompt", {
             "customer_name": "John",
             "question": "What is your baggage policy?",
             "faq_knowledge_base": "..."

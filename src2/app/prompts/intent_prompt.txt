@@ -8,8 +8,8 @@ Your job is to analyze the user's input and:
 AVAILABLE TOOLS:
 {available_tools}
 
-USER INPUT:
-{user_input}
+USER PROMPT:
+{user_prompt}
 
 INSTRUCTIONS:
 - Select the ONE best tool to handle this request
