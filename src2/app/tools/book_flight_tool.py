@@ -84,7 +84,7 @@ class BookFlightTool:
         # =================================================================
         # BREAKPOINT 3: BUILD PROMPT WITH FLIGHT INVENTORY
         # =================================================================
-        prompt = self._templates.load("book_flight", {
+        prompt = self._templates.load("book_flight_prompt", {
             "customer_name": context.customer_name,
             "available_flights": flights_text,
             "requested_flight": request.flight_number or "not specified",

@@ -92,7 +92,7 @@ class FAQTool:
         #
         # This is CONTEXT ENGINEERING: deciding what the model sees.
         # =================================================================
-        prompt = self._templates.load("faq", {
+        prompt = self._templates.load("faq_prompt", {
             "customer_name": context.customer_name,
             "question": request.question,
             "faq_knowledge_base": grounding_data

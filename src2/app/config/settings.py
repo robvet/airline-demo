@@ -101,6 +101,44 @@ class Settings(BaseSettings):
         validation_alias="OPEN_BROWSER",
         description="Auto-open browser on startup. Set OPEN_BROWSER=true for local dev."
     )
+    
+    # =========================================================================
+    # Azure AI Foundry / Evaluations (optional - for logging evals to portal)
+    # =========================================================================
+    azure_subscription_id: str | None = Field(
+        default=None,
+        validation_alias="AZURE_SUBSCRIPTION_ID",
+        description="Azure subscription for Foundry project"
+    )
+    azure_resource_group: str | None = Field(
+        default=None,
+        validation_alias="AZURE_RESOURCE_GROUP",
+        description="Resource group containing Foundry project"
+    )
+    azure_ai_project_name: str | None = Field(
+        default=None,
+        validation_alias="AZURE_AI_PROJECT_NAME",
+        description="Foundry project name for evaluation logging"
+    )
+    azure_openai_eval_deployment: str = Field(
+        default="gpt-4.1-mini",
+        validation_alias="AZURE_OPENAI_EVAL_DEPLOYMENT",
+        description="Model for evaluations (use model that accepts max_tokens)"
+    )
+    
+    @property
+    def azure_ai_project(self) -> dict | None:
+        """
+        Returns Foundry project config for azure-ai-evaluation SDK.
+        Returns None if not fully configured.
+        """
+        if all([self.azure_subscription_id, self.azure_resource_group, self.azure_ai_project_name]):
+            return {
+                "subscription_id": self.azure_subscription_id,
+                "resource_group_name": self.azure_resource_group,
+                "project_name": self.azure_ai_project_name,
+            }
+        return None
 
 
 @lru_cache()
